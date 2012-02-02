@@ -3,7 +3,7 @@
 from django.test import TestCase
 from django.db import models
 from django.core import serializers
-from picklefield.fields import PickledObjectField
+from picklefield.fields import PickledObjectField, wrap_conflictual_object
 
 class TestingModel(models.Model):
     pickle_field = PickledObjectField()
@@ -24,6 +24,7 @@ class PickledObjectFieldTests(TestCase):
             (1, 2, 3, 4, 5),
             [1, 2, 3, 4, 5],
             TestCustomDataType('Hello World'),
+            MinimalTestingModel,
         )
         return super(PickledObjectFieldTests, self).setUp()
 
@@ -41,6 +42,8 @@ class PickledObjectFieldTests(TestCase):
             # the same data, even thought it's stored differently in the DB.
             self.assertEquals(value, model_test.pickle_field)
             self.assertEquals(value, model_test.compressed_pickle_field)
+            # Make sure we can also retreive the model
+            model_test.save()
             model_test.delete()
 
         # Make sure the default value for default_pickled_field gets stored
@@ -110,11 +113,14 @@ class PickledObjectFieldTests(TestCase):
             model_test.save()
             # Make sure that we can do an ``exact`` lookup by both the
             # pickle_field and the compressed_pickle_field.
-            model_test = TestingModel.objects.get(pickle_field__exact=value, compressed_pickle_field__exact=value)
+            wrapped_value = wrap_conflictual_object(value)
+            model_test = TestingModel.objects.get(pickle_field__exact=wrapped_value,
+                                                  compressed_pickle_field__exact=wrapped_value)
             self.assertEquals(value, model_test.pickle_field)
             self.assertEquals(value, model_test.compressed_pickle_field)
             # Make sure that ``in`` lookups also work correctly.
-            model_test = TestingModel.objects.get(pickle_field__in=[value], compressed_pickle_field__in=[value])
+            model_test = TestingModel.objects.get(pickle_field__in=[wrapped_value],
+                                                  compressed_pickle_field__in=[wrapped_value])
             self.assertEquals(value, model_test.pickle_field)
             self.assertEquals(value, model_test.compressed_pickle_field)
             # Make sure that ``is_null`` lookups are working.
