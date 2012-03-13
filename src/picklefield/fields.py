@@ -88,7 +88,6 @@ class PickledObjectField(models.Field):
         kwargs.setdefault('editable', False)
         super(PickledObjectField, self).__init__(*args, **kwargs)
 
-
     def get_default(self):
         """
         Returns the default value for this field.
