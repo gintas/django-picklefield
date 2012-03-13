@@ -81,10 +81,13 @@ class PickledObjectField(models.Field):
     __metaclass__ = models.SubfieldBase
 
     def __init__(self, *args, **kwargs):
+        self.encode = kwargs.pop('encode', dbsafe_encode)
+        self.decode = kwargs.pop('decode', dbsafe_decode)
         self.compress = kwargs.pop('compress', False)
         self.protocol = kwargs.pop('protocol', DEFAULT_PROTOCOL)
         kwargs.setdefault('editable', False)
         super(PickledObjectField, self).__init__(*args, **kwargs)
+
 
     def get_default(self):
         """
@@ -117,7 +120,7 @@ class PickledObjectField(models.Field):
         """
         if value is not None:
             try:
-                value = dbsafe_decode(value, self.compress)
+                value = self.decode(value, self.compress)
             except:
                 # If the value is a definite pickle; and an error is raised in
                 # de-pickling it should be allowed to propogate.
@@ -150,7 +153,7 @@ class PickledObjectField(models.Field):
             # marshaller (telling it to store it like it would a string), but
             # since both of these methods result in the same value being stored,
             # doing things this way is much easier.
-            value = force_unicode(dbsafe_encode(value, self.compress, self.protocol))
+            value = force_unicode(self.encode(value, self.compress, self.protocol))
         return value
 
     def value_to_string(self, obj):
