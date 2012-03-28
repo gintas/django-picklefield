@@ -23,7 +23,7 @@
 from setuptools import setup, find_packages
 
 setup(name='django-picklefield',
-    version='0.2.0',
+    version='0.2.0-incuna1',
     description='Pickled object field for Django',
     long_description=open('README').read(),
     author='Gintautas Miliauskas',
