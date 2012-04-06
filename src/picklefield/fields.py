@@ -27,7 +27,7 @@ class PickledObject(str):
 
     """
 
-class ObjectWrapper(object):
+class _ObjectWrapper(object):
     """
     A class used to wrap object that have properties that may clash with the 
     ORM internals.
@@ -36,13 +36,14 @@ class ObjectWrapper(object):
     `django.db.Model` subclasses won't work under certain conditions and the
     same apply for trying to retrieve any `callable` object.
     """
-    
+    __slots__ = ('_obj',)
+
     def __init__(self, obj):
         self._obj = obj
 
 def wrap_conflictual_object(obj):
     if hasattr(obj, 'prepare_database_save') or callable(obj):
-        obj = ObjectWrapper(obj)
+        obj = _ObjectWrapper(obj)
     return obj
 
 def dbsafe_encode(value, compress_object=False, pickle_protocol=DEFAULT_PROTOCOL):
@@ -124,7 +125,7 @@ class PickledObjectField(models.Field):
                 if isinstance(value, PickledObject):
                     raise
             else:
-                if isinstance(value, ObjectWrapper):
+                if isinstance(value, _ObjectWrapper):
                     return value._obj
         return value
 
