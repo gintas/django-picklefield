@@ -19,21 +19,35 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
+import codecs
 from setuptools import setup, find_packages
+
+
+DESC=codecs.open('README', encoding='utf-8').read()
+
 
 setup(name='django-picklefield',
     version='0.2.0',
     description='Pickled object field for Django',
-    long_description=open('README').read(),
+    long_description=DESC,
     author='Gintautas Miliauskas',
     author_email='gintautas@miliauskas.lt',
     url='http://github.com/gintas/django-picklefield',
     packages=find_packages('src'),
     package_dir={'' : 'src'},
+    install_requires=[
+        'six',
+    ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Django',
+        'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.5',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
     ]
 )
