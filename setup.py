@@ -36,7 +36,6 @@ setup(name='django-picklefield',
     packages=find_packages('src'),
     package_dir={'' : 'src'},
     install_requires=[
-        'six',
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
