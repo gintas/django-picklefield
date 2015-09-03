@@ -2,12 +2,18 @@
 from copy import deepcopy
 from base64 import b64encode, b64decode
 from zlib import compress, decompress
-import six
 import django
 from django.db import models
 
 from picklefield import DEFAULT_PROTOCOL
 from picklefield.compat import force_text, loads, dumps
+
+try:
+    from six import with_metaclass
+except ImportError:
+    def with_metaclass(meta, base=object):
+        """Create a base class with a metaclass."""
+        return meta("NewBase", (base,), {})
 
 
 class PickledObject(str):
@@ -73,7 +79,7 @@ def _get_subfield_superclass():
     # see https://github.com/django/django/commit/222c73261650201f5ce99e8dd4b1ce0d30a69eb4
     if django.VERSION < (1,3):
         return models.Field
-    return six.with_metaclass(models.SubfieldBase, models.Field)
+    return with_metaclass(models.SubfieldBase, models.Field)
 
 
 class PickledObjectField(_get_subfield_superclass()):
