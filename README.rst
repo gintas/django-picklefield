@@ -137,7 +137,7 @@ since it is never a good idea to have a PickledObjectField be user editable.
 Changes
 -------
 
-Changes in version 0.3.3
+Changes in version 1.0.0
 ========================
 
 * Added a new option to prevent a copy of the object before pickling: `copy=True`
