@@ -1,9 +1,7 @@
 """Unit tests for django-picklefield."""
 import json
 from datetime import date
-from unittest import skipIf
 
-import django
 from django.core import serializers
 from django.db import models
 from django.test import TestCase
@@ -161,7 +159,6 @@ class PickledObjectFieldTests(TestCase):
         self.assertEqual(value, model_test.pickle_field)
         model_test.delete()
 
-    @skipIf(django.VERSION[:2] < (1, 5), 'Skip for older Django versions')
     def testLimitLookupsType(self):
         """
         Test that picklefield supports lookup type limit
