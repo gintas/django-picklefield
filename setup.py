@@ -26,7 +26,7 @@ long_description = codecs.open('README.rst', encoding='utf-8').read()
 
 setup(
     name='django-picklefield',
-    version='1.0.0',
+    version='1.1.0',
     description='Pickled object field for Django',
     long_description=long_description,
     author='Gintautas Miliauskas',
