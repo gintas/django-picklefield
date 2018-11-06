@@ -3,6 +3,7 @@ from base64 import b64decode, b64encode
 from copy import deepcopy
 from zlib import compress, decompress
 
+import django
 from django.db import models
 from django.utils.encoding import force_text
 
@@ -135,8 +136,12 @@ class PickledObjectField(models.Field):
         value = super(PickledObjectField, self).pre_save(model_instance, add)
         return wrap_conflictual_object(value)
 
-    def from_db_value(self, value, expression, connection, context):
-        return self.to_python(value)
+    if django.VERSION < (2, 0):
+        def from_db_value(self, value, expression, connection, context):
+            return self.to_python(value)
+    else:
+        def from_db_value(self, value, expression, connection):
+            return self.to_python(value)
 
     def get_db_prep_value(self, value, connection=None, prepared=False):
         """
