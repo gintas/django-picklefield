@@ -6,21 +6,29 @@ from django.db import IntegrityError, models
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import isolate_apps
 from picklefield.fields import (
-    PickledObjectField, JobLibPickledObjectField,
+    JobLibPickledObjectField, PickledObjectField,
     dbsafe_encode, wrap_conflictual_object,
 )
 
 from .models import (
-    D1, D2, L1, S1, T1, MinimalTestingModel, TestCopyDataType,
-    TestCustomDataType, TestingModel, JobLibModel,
+    D1, D2, L1, S1, T1, JobLibMinimalModel, JobLibTestingModel,
+    MinimalTestingModel, TestCopyDataType,
+    TestCustomDataType, TestingModel,
 )
 
 
 class PickledObjectFieldTests(TestCase):
+    model = TestingModel
+    minimal_model = MinimalTestingModel
+    serialized_label = 'tests.minimaltestingmodel'
+
+    def _encode(self, value):
+        return dbsafe_encode(value)
+
     def setUp(self):
         self.testing_data = (D2, S1, T1, L1,
                              TestCustomDataType(S1),
-                             MinimalTestingModel)
+                             self.minimal_model)
         return super(PickledObjectFieldTests, self).setUp()
 
     def test_data_integrity(self):
@@ -29,9 +37,9 @@ class PickledObjectFieldTests(TestCase):
         the database, whether compression is enabled or not.
         """
         for value in self.testing_data:
-            model_test = TestingModel(pickle_field=value, compressed_pickle_field=value)
+            model_test = self.model(pickle_field=value, compressed_pickle_field=value)
             model_test.save()
-            model_test = TestingModel.objects.get(id__exact=model_test.id)
+            model_test = self.model.objects.get(id__exact=model_test.id)
             # Make sure that both the compressed and uncompressed fields return
             # the same data, even thought it's stored differently in the DB.
             self.assertEqual(value, model_test.pickle_field)
@@ -42,9 +50,9 @@ class PickledObjectFieldTests(TestCase):
 
         # Make sure the default value for default_pickled_field gets stored
         # correctly and that it isn't converted to a string.
-        model_test = TestingModel(pickle_field=1, compressed_pickle_field=1)
+        model_test = self.model(pickle_field=1, compressed_pickle_field=1)
         model_test.save()
-        model_test = TestingModel.objects.get(id__exact=model_test.id)
+        model_test = self.model.objects.get(id__exact=model_test.id)
         self.assertEqual((D1, S1, T1, L1), model_test.default_pickle_field)
         self.assertEqual(date.today(), model_test.callable_pickle_field)
 
@@ -104,35 +112,35 @@ class PickledObjectFieldTests(TestCase):
 
         """  # noqa
         for value in self.testing_data:
-            model_test = TestingModel(pickle_field=value, compressed_pickle_field=value)
+            model_test = self.model(pickle_field=value, compressed_pickle_field=value)
             model_test.save()
             # Make sure that we can do an ``exact`` lookup by both the
             # pickle_field and the compressed_pickle_field.
             wrapped_value = wrap_conflictual_object(value)
-            model_test = TestingModel.objects.get(pickle_field__exact=wrapped_value,
-                                                  compressed_pickle_field__exact=wrapped_value)
+            model_test = self.model.objects.get(pickle_field__exact=wrapped_value,
+                                                compressed_pickle_field__exact=wrapped_value)
             self.assertEqual(value, model_test.pickle_field)
             self.assertEqual(value, model_test.compressed_pickle_field)
             # Make sure that ``in`` lookups also work correctly.
-            model_test = TestingModel.objects.get(pickle_field__in=[wrapped_value],
-                                                  compressed_pickle_field__in=[wrapped_value])
+            model_test = self.model.objects.get(pickle_field__in=[wrapped_value],
+                                                compressed_pickle_field__in=[wrapped_value])
             self.assertEqual(value, model_test.pickle_field)
             self.assertEqual(value, model_test.compressed_pickle_field)
             # Make sure that ``is_null`` lookups are working.
-            self.assertEqual(1, TestingModel.objects.filter(pickle_field__isnull=False).count())
-            self.assertEqual(0, TestingModel.objects.filter(pickle_field__isnull=True).count())
+            self.assertEqual(1, self.model.objects.filter(pickle_field__isnull=False).count())
+            self.assertEqual(0, self.model.objects.filter(pickle_field__isnull=True).count())
             model_test.delete()
 
         # Make sure that lookups of the same value work, even when referenced
         # differently. See the above docstring for more info on the issue.
         value = (D1, S1, T1, L1)
-        model_test = TestingModel(pickle_field=value, compressed_pickle_field=value)
+        model_test = self.model(pickle_field=value, compressed_pickle_field=value)
         model_test.save()
         # Test lookup using an assigned variable.
-        model_test = TestingModel.objects.get(pickle_field__exact=value)
+        model_test = self.model.objects.get(pickle_field__exact=value)
         self.assertEqual(value, model_test.pickle_field)
         # Test lookup using direct input of a matching value.
-        model_test = TestingModel.objects.get(
+        model_test = self.model.objects.get(
             pickle_field__exact=(D1, S1, T1, L1),
             compressed_pickle_field__exact=(D1, S1, T1, L1),
         )
@@ -144,20 +152,20 @@ class PickledObjectFieldTests(TestCase):
         Test that picklefield supports lookup type limit
         """
         with self.assertRaisesMessage(TypeError, 'Lookup type gte is not supported'):
-            TestingModel.objects.filter(pickle_field__gte=1)
+            self.model.objects.filter(pickle_field__gte=1)
 
     def test_serialization(self):
-        model = MinimalTestingModel(pk=1, pickle_field={'foo': 'bar'})
+        model = self.minimal_model(pk=1, pickle_field={'foo': 'bar'})
         serialized = serializers.serialize('json', [model])
         data = json.loads(serialized)
 
         # determine output at runtime, because pickle output in python 3
         # is different (but compatible with python 2)
-        p = dbsafe_encode({'foo': 'bar'})
+        p = self._encode({'foo': 'bar'})
 
         self.assertEqual(data, [{
             'pk': 1,
-            'model': 'tests.minimaltestingmodel',
+            'model': self.serialized_label,
             'fields': {"pickle_field": p}},
         ])
 
@@ -165,14 +173,14 @@ class PickledObjectFieldTests(TestCase):
             self.assertEqual(deserialized_test.object, model)
 
     def test_no_copy(self):
-        TestingModel.objects.create(
+        self.model.objects.create(
             pickle_field='Copy Me',
             compressed_pickle_field='Copy Me',
             non_copying_field=TestCopyDataType('Dont Copy Me')
         )
 
         with self.assertRaises(ValueError):
-            TestingModel.objects.create(
+            self.model.objects.create(
                 pickle_field=TestCopyDataType('BOOM!'),
                 compressed_pickle_field='Copy Me',
                 non_copying_field='Dont copy me'
@@ -180,7 +188,16 @@ class PickledObjectFieldTests(TestCase):
 
     def test_empty_strings_not_allowed(self):
         with self.assertRaises(IntegrityError):
-            MinimalTestingModel.objects.create()
+            self.minimal_model.objects.create()
+
+
+class JoblibPickledObjectFieldTests(PickledObjectFieldTests):
+    model = JobLibTestingModel
+    minimal_model = JobLibMinimalModel
+    serialized_label = 'tests.joblibminimalmodel'
+
+    def _encode(self, value):
+        return JobLibPickledObjectField().encode(value)
 
 
 @isolate_apps('tests')

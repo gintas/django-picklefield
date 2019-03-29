@@ -41,6 +41,6 @@ setup(
     packages=find_packages(exclude=['tests', 'tests.*']),
     install_requires=['Django>=1.11'],
     extras_require={
-        'tests': ['tox'],
+        'tests': ['tox', 'joblib'],
     },
 )

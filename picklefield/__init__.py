@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django.utils.version
 
 from .constants import DEFAULT_PROTOCOL
-from .fields import PickledObjectField, JobLibPickledObjectField
+from .fields import JobLibPickledObjectField, PickledObjectField
 
 __all__ = 'VERSION', '__version__', 'DEFAULT_PROTOCOL', 'PickledObjectField', \
     'JobLibPickledObjectField'

@@ -18,7 +18,7 @@ except ImportError:
     from pickle import loads, dumps
 try:
     from joblib import load as jobload, dump as jobdump
-except ImportError:
+except ImportError:  # noqa
     jobload = jobdump = None
 
 
@@ -240,6 +240,8 @@ class JobLibPickledObjectField(BasePickledObjectField):
     use the ``isnull`` lookup type correctly.
     """
     def encode(self, value):
+        if self.copy:
+            value = deepcopy(value)
         fileobj = BytesIO()
         jobdump(value, fileobj, self.compress)
         fileobj.seek(0)
@@ -250,7 +252,6 @@ class JobLibPickledObjectField(BasePickledObjectField):
     def decode(self, value):
         value = value.encode()
         value = b64decode(value)
-
         fileobj = BytesIO(value)
         obj = jobload(fileobj, self.compress)
         return obj
