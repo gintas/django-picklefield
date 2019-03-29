@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from base64 import b64decode, b64encode
 from copy import deepcopy
+from io import BytesIO
 from zlib import compress, decompress
 
 import django
@@ -15,6 +16,10 @@ try:
     from cPickle import loads, dumps
 except ImportError:
     from pickle import loads, dumps
+try:
+    from joblib import load as jobload, dump as jobdump
+except ImportError:
+    jobload = jobdump = None
 
 
 class PickledObject(str):
@@ -78,16 +83,7 @@ def dbsafe_decode(value, compress_object=False):
     return loads(value)
 
 
-class PickledObjectField(models.Field):
-    """
-    A field that will accept *any* python object and store it in the
-    database. PickledObjectField will optionally compress its values if
-    declared with the keyword argument ``compress=True``.
-
-    Does not actually encode and compress ``None`` objects (although you
-    can still do lookups using None). This way, it is still possible to
-    use the ``isnull`` lookup type correctly.
-    """
+class BasePickledObjectField(models.Field):
     empty_strings_allowed = False
 
     def __init__(self, *args, **kwargs):
@@ -95,7 +91,7 @@ class PickledObjectField(models.Field):
         self.protocol = kwargs.pop('protocol', DEFAULT_PROTOCOL)
         self.copy = kwargs.pop('copy', True)
         kwargs.setdefault('editable', False)
-        super(PickledObjectField, self).__init__(*args, **kwargs)
+        super(BasePickledObjectField, self).__init__(*args, **kwargs)
 
     def get_default(self):
         """
@@ -114,7 +110,7 @@ class PickledObjectField(models.Field):
                 return self.default()
             return self.default
         # If the field doesn't have a default, then we punt to models.Field.
-        return super(PickledObjectField, self).get_default()
+        return super(BasePickledObjectField, self).get_default()
 
     def _check_default(self):
         if self.has_default() and isinstance(self.default, (list, dict, set)):
@@ -139,7 +135,7 @@ class PickledObjectField(models.Field):
             return []
 
     def check(self, **kwargs):
-        errors = super(PickledObjectField, self).check(**kwargs)
+        errors = super(BasePickledObjectField, self).check(**kwargs)
         errors.extend(self._check_default())
         return errors
 
@@ -155,7 +151,7 @@ class PickledObjectField(models.Field):
         """
         if value is not None:
             try:
-                value = dbsafe_decode(value, self.compress)
+                value = self.decode(value)
             except Exception:
                 # If the value is a definite pickle; and an error is raised in
                 # de-pickling it should be allowed to propogate.
@@ -167,7 +163,7 @@ class PickledObjectField(models.Field):
         return value
 
     def pre_save(self, model_instance, add):
-        value = super(PickledObjectField, self).pre_save(model_instance, add)
+        value = super(BasePickledObjectField, self).pre_save(model_instance, add)
         return wrap_conflictual_object(value)
 
     if django.VERSION < (2, 0):
@@ -195,7 +191,7 @@ class PickledObjectField(models.Field):
             # marshaller (telling it to store it like it would a string), but
             # since both of these methods result in the same value being stored,
             # doing things this way is much easier.
-            value = force_text(dbsafe_encode(value, self.compress, self.protocol, self.copy))
+            value = force_text(self.encode(value))
         return value
 
     def value_to_string(self, obj):
@@ -211,4 +207,50 @@ class PickledObjectField(models.Field):
         """
         if lookup_name not in ['exact', 'in', 'isnull']:
             raise TypeError('Lookup type %s is not supported.' % lookup_name)
-        return super(PickledObjectField, self).get_lookup(lookup_name)
+        return super(BasePickledObjectField, self).get_lookup(lookup_name)
+
+
+class PickledObjectField(BasePickledObjectField):
+    """
+    A field that will accept *any* python object and store it in the
+    database. PickledObjectField will optionally compress its values if
+    declared with the keyword argument ``compress=True``.
+
+    Does not actually encode and compress ``None`` objects (although you
+    can still do lookups using None). This way, it is still possible to
+    use the ``isnull`` lookup type correctly.
+    """
+    def decode(self, value):
+        value = dbsafe_decode(value, self.compress)
+        return value
+
+    def encode(self, value):
+        value = dbsafe_encode(value, self.compress, self.protocol, self.copy)
+        return value
+
+
+class JobLibPickledObjectField(BasePickledObjectField):
+    """
+    A field that will accept *any* python object and store it in the
+    database. PickledObjectField will optionally compress its values if
+    declared with the keyword argument ``compress=True``.
+
+    Does not actually encode and compress ``None`` objects (although you
+    can still do lookups using None). This way, it is still possible to
+    use the ``isnull`` lookup type correctly.
+    """
+    def encode(self, value):
+        fileobj = BytesIO()
+        jobdump(value, fileobj, self.compress)
+        fileobj.seek(0)
+        value = fileobj.read()
+        value = b64encode(value).decode()
+        return PickledObject(value)
+
+    def decode(self, value):
+        value = value.encode()
+        value = b64decode(value)
+
+        fileobj = BytesIO(value)
+        obj = jobload(fileobj, self.compress)
+        return obj
