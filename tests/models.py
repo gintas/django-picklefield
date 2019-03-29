@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from datetime import date
 
 from django.db import models
-from picklefield import PickledObjectField
+from picklefield import PickledObjectField, JobLibPickledObjectField
 
 S1 = 'Hello World'
 T1 = (1, 2, 3, 4, 5)
@@ -31,3 +31,7 @@ class TestingModel(models.Model):
 
 class MinimalTestingModel(models.Model):
     pickle_field = PickledObjectField()
+
+
+class JobLibModel(models.Model):
+    joblib_field = JobLibPickledObjectField()

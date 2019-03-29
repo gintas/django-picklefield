@@ -6,12 +6,13 @@ from django.db import IntegrityError, models
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import isolate_apps
 from picklefield.fields import (
-    PickledObjectField, dbsafe_encode, wrap_conflictual_object,
+    PickledObjectField, JobLibPickledObjectField,
+    dbsafe_encode, wrap_conflictual_object,
 )
 
 from .models import (
     D1, D2, L1, S1, T1, MinimalTestingModel, TestCopyDataType,
-    TestCustomDataType, TestingModel,
+    TestCustomDataType, TestingModel, JobLibModel,
 )
 
 
@@ -184,16 +185,18 @@ class PickledObjectFieldTests(TestCase):
 
 @isolate_apps('tests')
 class PickledObjectFieldCheckTests(SimpleTestCase):
+    field = PickledObjectField
+
     def test_mutable_default_check(self):
         class Model(models.Model):
-            list_field = PickledObjectField(default=[])
-            dict_field = PickledObjectField(default={})
-            set_field = PickledObjectField(default=set())
+            list_field = self.field(default=[])
+            dict_field = self.field(default={})
+            set_field = self.field(default=set())
 
         msg = (
-            "PickledObjectField default should be a callable instead of a mutable instance so "
+            "%s default should be a callable instead of a mutable instance so "
             "that it's not shared between all field instances."
-        )
+        ) % self.field.__name__
 
         self.assertEqual(Model().check(), [
             checks.Warning(
@@ -218,8 +221,12 @@ class PickledObjectFieldCheckTests(SimpleTestCase):
 
     def test_non_mutable_default_check(self):
         class Model(models.Model):
-            list_field = PickledObjectField(default=list)
-            dict_field = PickledObjectField(default=dict)
-            set_field = PickledObjectField(default=set)
+            list_field = self.field(default=list)
+            dict_field = self.field(default=dict)
+            set_field = self.field(default=set)
 
         self.assertEqual(Model().check(), [])
+
+
+class JobLibPickledObjectFieldCheckTests(PickledObjectFieldCheckTests):
+    field = JobLibPickledObjectField
