@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.db import models
+
 from picklefield import PickledObjectField
 
 S1 = 'Hello World'

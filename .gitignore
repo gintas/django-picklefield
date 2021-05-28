@@ -5,3 +5,4 @@ django_picklefield.egg-info/*
 build/
 .coverage
 .tox
+.tool-versions

@@ -1,4 +1,5 @@
 import json
+import pickle
 from datetime import date
 from unittest.mock import patch
 
@@ -6,8 +7,10 @@ from django.core import checks, serializers
 from django.db import IntegrityError, models
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import isolate_apps
+
 from picklefield.fields import (
-    PickledObjectField, dbsafe_encode, wrap_conflictual_object,
+    PickledObjectField, dbsafe_encode, get_dumps, get_loads,
+    wrap_conflictual_object,
 )
 
 from .models import (
@@ -251,3 +254,31 @@ class PickledObjectFieldCheckTests(SimpleTestCase):
             set_field = PickledObjectField(default=set)
 
         self.assertEqual(Model().check(), [])
+
+
+def custom_fn():
+    pass
+
+
+class TestSettings(SimpleTestCase):
+    def setUp(self):
+        get_dumps.cache_clear()
+        get_loads.cache_clear()
+
+    def test_get_dumps_defaults_to_pickle(self):
+        dumps = get_dumps()
+        self.assertEqual(dumps, pickle.dumps)
+
+    def test_get_loads_defaults_to_pickle(self):
+        loads = get_loads()
+        self.assertEqual(loads, pickle.loads)
+
+    def test_get_dumps_from_setting(self):
+        with self.settings(PICKLEFIELD_DUMPS='tests.tests.custom_fn'):
+            dumps = get_dumps()
+            self.assertEqual(dumps, custom_fn)
+
+    def test_get_loads_from_setting(self):
+        with self.settings(PICKLEFIELD_LOADS='tests.tests.custom_fn'):
+            loads = get_loads()
+            self.assertEqual(loads, custom_fn)

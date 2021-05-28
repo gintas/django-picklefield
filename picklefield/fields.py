@@ -1,12 +1,14 @@
+import functools
+import pickle
 from base64 import b64decode, b64encode
 from copy import deepcopy
-from pickle import dumps, loads
 from zlib import compress, decompress
 
 from django.conf import settings
 from django.core import checks
 from django.db import models
 from django.utils.encoding import force_str
+from django.utils.module_loading import import_string
 
 from .constants import DEFAULT_PROTOCOL
 
@@ -50,6 +52,22 @@ def get_default_protocol():
     return getattr(settings, 'PICKLEFIELD_DEFAULT_PROTOCOL', DEFAULT_PROTOCOL)
 
 
+@functools.lru_cache(maxsize=1)
+def get_dumps():
+    attr = getattr(settings, 'PICKLEFIELD_DUMPS', None)
+    if attr is None:
+        return pickle.dumps
+    return import_string(attr)
+
+
+@functools.lru_cache(maxsize=1)
+def get_loads():
+    attr = getattr(settings, 'PICKLEFIELD_LOADS', None)
+    if attr is None:
+        return pickle.loads
+    return import_string(attr)
+
+
 def dbsafe_encode(value, compress_object=False, pickle_protocol=None, copy=True):
     # We use deepcopy() here to avoid a problem with cPickle, where dumps
     # can generate different character streams for same lookup value if
@@ -63,6 +81,7 @@ def dbsafe_encode(value, compress_object=False, pickle_protocol=None, copy=True)
         # Copy can be very expensive if users aren't going to perform lookups
         # on the value anyway.
         value = deepcopy(value)
+    dumps = get_dumps()
     value = dumps(value, protocol=pickle_protocol)
     if compress_object:
         value = compress(value)
@@ -75,6 +94,7 @@ def dbsafe_decode(value, compress_object=False):
     value = b64decode(value)
     if compress_object:
         value = decompress(value)
+    loads = get_loads()
     return loads(value)
 
 

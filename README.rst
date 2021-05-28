@@ -63,6 +63,21 @@ and assign whatever you like (as long as it's picklable) to the field:
     >>> obj.args = ['fancy', {'objects': 'inside'}]
     >>> obj.save()
 
+--------
+Settings
+--------
+
+`PICKLEFIELD_DEFAULT_PROTOCOL`
+
+Set the default pickle protocol on dumps encoding
+
+`PICKLEFIELD_DUMPS`
+
+Path to a dumps function, defaults to `pickle.dumps`
+
+`PICKLEFIELD_LOADS`
+
+Path to a loads function, defaults to `pickle.loads`
 
 -----
 Notes
