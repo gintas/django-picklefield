@@ -10,21 +10,21 @@ D1 = {1: 1, 2: 4, 3: 6, 4: 8, 5: 10}
 D2 = {1: 2, 2: 4, 3: 6, 4: 8, 5: 10}
 
 
-class TestCopyDataType(str):
+class FakeCopyDataType(str):
     def __deepcopy__(self, memo):
         raise ValueError('Please dont copy me')
 
 
-class TestCustomDataType(str):
+class FakeCustomDataType(str):
     pass
 
 
-class TestingModel(models.Model):
+class FakeModel(models.Model):
     pickle_field = PickledObjectField()
     compressed_pickle_field = PickledObjectField(compress=True)
     default_pickle_field = PickledObjectField(default=(D1, S1, T1, L1))
     callable_pickle_field = PickledObjectField(default=date.today)
-    non_copying_field = PickledObjectField(copy=False, default=TestCopyDataType('boom!'))
+    non_copying_field = PickledObjectField(copy=False, default=FakeCopyDataType('boom!'))
     nullable_pickle_field = PickledObjectField(null=True)
 
 

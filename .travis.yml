@@ -7,6 +7,7 @@ python:
   - 3.6
   - 3.7
   - 3.8
+  - 3.9
 stages:
   - lint
   - test
@@ -16,10 +17,10 @@ arch:
 jobs:
   fast_finish: true
   include:
-    - { stage: lint, env: TOXENV=flake8, python: 3.6 }
-    - { stage: lint, env: TOXENV=isort, python: 3.6 }
-    - { stage: lint, env: TOXENV=flake8, python: 3.6, arch: ppc64le }
-    - { stage: lint, env: TOXENV=isort, python: 3.6, arch: ppc64le }
+    - { stage: lint, env: TOXENV=flake8, python: 3.9 }
+    - { stage: lint, env: TOXENV=isort, python: 3.9 }
+    - { stage: lint, env: TOXENV=flake8, python: 3.9, arch: ppc64le }
+    - { stage: lint, env: TOXENV=isort, python: 3.9, arch: ppc64le }
 
 install:
 - pip install tox coveralls tox-travis
@@ -36,4 +37,4 @@ deploy:
   distributions: sdist bdist_wheel
   on:
     tags: true
-    condition: "$TRAVIS_PYTHON_VERSION = 3.5"
+    condition: "$TRAVIS_PYTHON_VERSION = 3.9"
