@@ -40,7 +40,7 @@ setup(
     ],
     keywords=['django pickle model field'],
     packages=find_packages(exclude=['tests', 'tests.*']),
-    python_requires='>=3',
+    python_requires='>=3.8',
     install_requires=['Django>=3.2'],
     extras_require={
         'tests': ['tox'],
