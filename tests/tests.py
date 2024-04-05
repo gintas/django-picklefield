@@ -6,6 +6,7 @@ from django.core import checks, serializers
 from django.db import IntegrityError, models
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import isolate_apps
+
 from picklefield.fields import (
     PickledObjectField, dbsafe_encode, wrap_conflictual_object,
 )
