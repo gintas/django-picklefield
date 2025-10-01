@@ -63,6 +63,22 @@ and assign whatever you like (as long as it's picklable) to the field:
     >>> obj.args = ['fancy', {'objects': 'inside'}]
     >>> obj.save()
 
+.. warning::
+
+  As the name of this package implies ``django-picklefield`` relies on the
+  stdlib `pickle`_ module to serialize its data. Concretely this means that
+  **this package should not be used to store user controllable data under any
+  circumstances at the risk of exposing your application to arbitrary code
+  execution**.
+
+  In order to prevent potentially dangerous usage of ``PickledObjectField``
+  field it is explicitly marked as ``editable=False`` which will prevent its
+  declarative usage in forms and consequently the admin but be aware that
+  assigning unsanitized user provided strings directly to a ``PickledObjectField``
+  exposes your to arbitrary code execution the same way piping malicious
+  strings into ``pickle.loads`` does.
+
+.. _pickle: https://docs.python.org/3/library/pickle.html#module-pickle
 
 -----
 Notes
