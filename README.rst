@@ -178,8 +178,8 @@ since it is never a good idea to have a PickledObjectField be user editable.
 Changes
 -------
 
-Pending release
-===============
+Changes in version 3.4.0
+========================
 
 * Added tested support for Django 6.0.
 * Added tested support for Python 3.14.
